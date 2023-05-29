@@ -1,0 +1,392 @@
+---
+title: "Gravats a Saurí (vall d’Àssua, Sort)"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+author: "Huet, T"
+abstract: "Informe de la troballa de petroglifs. Informe adreçat al Servei d’Arqueologia de la Direcció General del Patrimoni Cultural per a notificar la troballa de diversos llocs d’art rupestre a la vall d’Àssua"
+geometry: margin=2cm
+output:
+  pdf_document: default
+html_document: default
+header-includes:
+- \usepackage{pdflscape}
+- \newcommand{\blandscape}{\begin{landscape}}
+- \newcommand{\elandscape}{\end{landscape}}
+- \usepackage{booktabs}
+- \usepackage{float}
+urlcolor: blue
+linkcolor: blue
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(warn=-1)
+
+library(googledrive)
+library(openxlsx)
+library(rgdal)
+library(raster)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(ggrepel)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+library(readr)
+library(sf)
+
+reload.gpkg <- F
+
+cwd <- dirname(rstudioapi::getSourceEditorContext()$path)
+outDir.ggd <- "https://drive.google.com/drive/folders/1gRcn8qHqh_BgJNaNiMYZru6-qzGzDEWq"
+# temporary folder to collect files
+tmpDir <- paste0(cwd, "/tmpDir")
+dir.create(tmpDir)
+
+# read the engrvings file
+gravats.path <- paste0(tmpDir, "/gravats.xlsx")
+llista_gravats.url <- "llista_gravats_19-20_bo"
+drive_download(llista_gravats.url, path = gravats.path, overwrite = T)
+gravats <- openxlsx::read.xlsx(gravats.path,
+                               rowNames = F,
+                               skipEmptyRows = TRUE)
+
+# read the GPKG file (SIG folder)
+roques.path <- paste0(tmpDir, "/roques.gpkg")
+if(reload.gpkg){
+  Gravats_Sauri.url <- "https://drive.google.com/file/d/1wlUSiGiYkJR8ihL5VCKcdv4N7ebK2XzP/view?usp=drive_link"
+  drive_download(Gravats_Sauri.url, path = roques.path, overwrite = T)
+  unlink(Gravats_Sauri.url)
+}
+# layer <- st_layers(roques.path) # not working
+roques <- st_read(roques.path, layer = "2019_2020-Roques_tot_zona_det")
+```
+
+# ANALYSES
+
+## Número de grabados por roca
+
+```{r , warning=F, echo=FALSE, results='asis'}
+thm_xt <- subset(gravats, select = c("roche", "thm", "tec", "lat", "thm_xt"))
+# merge engravings and rocks
+thm_xt <- merge(thm_xt, roques, by = "roche", all.x = T)
+thm_xt <- subset(thm_xt, select = c("roche", "thm", "tec", "lat", "thm_xt", "geom", "z", "zona"))
+# thm_xt_z <- subset(thm_xt, select = c("roche", "thm_xt", "zona"))
+# export avec num zona
+# openxlsx::write.xlsx(thm_xt_z, "D:/Sites_10/Sauri/list_gravures_xt_z.xlsx",row.names = F,col.names=T,append = TRUE)
+
+# nb gravures roches
+# nb.grav.roche <- as.data.frame(roques)
+# nb.grav.roche <- subset(nb.grav.roche, select = c("roche", "num"))
+nb.grav.roche <- thm_xt %>% 
+  count(roche)
+
+# statistical indices + labels
+mean.gr <- mean(nb.grav.roche$n)
+mean.label <- paste0("mitjana: ", round(mean.gr, 1))
+median.gr <- median(nb.grav.roche$n)
+median.label <- paste0("mediana: ", median.gr)
+mode.gr <- as.integer(names(sort(-table(nb.grav.roche$n)))[1])
+modo.label <- paste0("modo: ", mode.gr)
+g.dist.nbgrav <- ggplot(nb.grav.roche, aes(n)) +
+  ggtitle("Número de grabados por roca - media, mediana, moda") +
+  geom_freqpoly(binwidth = 1)+
+  geom_vline(xintercept = mode.gr, linetype = "dotted",
+             color = "lightgrey", size=.5) +
+  annotate("text", x = mode.gr, y = 40, label = modo.label, angle = 90, size = 3, color = "darkgrey") +
+  geom_vline(xintercept = mean.gr, 
+             color = "lightgrey", size = .5) +
+  annotate("text", x = mean.gr, y = 40, label = mean.label, angle = 90, size = 3, color = "darkgrey") +
+  geom_vline(xintercept = median.gr, linetype = "dashed", 
+             color = "lightgrey", size = .5) +
+  annotate("text", x = median.gr, y = 40, label= median.label, angle = 90, size = 3, color = "darkgrey") +
+  xlab("nb gravats") + ylab("nb roques gravades") +
+  scale_x_continuous(breaks = c(1, 5, 10, 20, 30, 50, 75, 100))+
+  xlim(0.9, 100)+
+  theme_bw()
+# save to temp dir
+outFileName <- "_distr_nbgravats_x_nbroques.png"
+outFile <- paste0(tmpDir,"/", outFileName)
+ggsave(outFile, 
+       g.dist.nbgrav, 
+       width = 16, height = 8, units = "cm")
+# upload to Google Drive
+drive_upload(media = outFile, 
+             path = paste0(outDir.ggd, "/"),
+             name = outFileName,
+             overwrite = T)
+```
+
+## Altitudes
+
+## Altitudes por número de grabados
+
+```{r dist_ali, warning=F, echo=FALSE, results='asis'}
+## altitudes histograms
+# zones
+altis.zonas <- thm_xt %>% 
+  group_by(zona) %>% 
+  mutate(alt.min = min(z),
+         alt.max  = max(z),
+         alt.moy = mean(z))
+altis.zonas <- subset(altis.zonas, select = c("zona", "alt.min", "alt.max", "alt.moy"))
+altis.zonas <- altis.zonas[!duplicated(altis.zonas), ]
+# remove zones without altitudes
+altis.zonas <- altis.zonas[!is.na(altis.zonas$zona), ]
+
+# rocks
+thm_xt_sp <- st_as_sf(thm_xt) # -> sf
+# remove rocks without altitudes
+thm_xt_sp <- thm_xt_sp[!is.na(thm_xt_sp$z), ]
+
+mycolo <- c("red", "blue", "pink", "yellow", "green")
+# regroupements
+thm_xt_sp <- thm_xt_sp[order(thm_xt_sp$thm_xt),] 
+# min.mean.sd.max <- function(x) {
+#   r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
+#   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
+#   r
+# }
+g.hist.thm <- ggplot(thm_xt_sp) +
+  ggtitle("Distribució d'altituds del gravat") +
+  xlab("altituds (msnm)") + ylab("total") +
+  # annotate("rect",xmin=nprosp.alt[1],xmax=nprosp.alt[2],ymin=-Inf,ymax=Inf, alpha=0.1, fill="black")+
+  # annotate("text", x = 1500, y = 100, label= "zone 4 \n no prospectada",angle=90,size=3) +
+  geom_text(data = altis.zonas, 
+            mapping = aes(x = alt.moy, y = 300, label = paste0("zona ", zona)), 
+            angle = 90, size = 3, vjust = -1, hjust = 1) +
+  geom_rect(data = altis.zonas, 
+            mapping = aes(xmin = alt.min, xmax = alt.max, ymin = 0, ymax = Inf),
+            fill = mycolo, alpha = 0.1) +
+  geom_histogram(aes(x = z), colour = "black", fill = "white", binwidth = 10) +
+  theme(axis.text.y = element_text(angle = 90)) +
+  theme_bw()
+# save to temp dir
+outFileName <- "_distr_nbgravats_x_altura.png"
+outFile <- paste0(tmpDir,"/", outFileName)
+ggsave(outFile, 
+       g.hist.thm, 
+       width = 16, height = 10, units = "cm")
+# upload to Google Drive
+drive_upload(media = outFile, 
+             path = paste0(outDir.ggd, "/"),
+             name = outFileName,
+             overwrite = T)
+```
+
+
+## Altitudes por temas
+
+### Altitudes por temas - orden alfabético
+
+```{r dist_alti_thm, warning=F, echo=FALSE, results='asis'}
+# boxplot des altitudes par themes
+g.bx.thm <- ggplot(aes(y = z, x = thm_xt), data = thm_xt_sp) +
+  ggtitle("Altitudes por temas - orden alfabético") +
+  geom_boxplot(fatten = 1.5, width = 0.7, lwd = 0.1, outlier.shape = NA) +
+  #stat_summary(fun.data = min.mean.sd.max, geom = "boxplot",position=position_dodge(width=.5), size=.5)+
+  geom_jitter(position = position_jitter(width = .5), size = .2, aes(colour = zona)) +
+  # annotate("rect", ymin = nprosp.alt[1], ymax = nprosp.alt[2], xmin = -Inf, xmax = Inf, alpha = 0.1, fill = "black")+
+  # annotate("text", y = 1500, x = 25, label= "zone 4 \n no prospectada",size=3,hjust=0) +
+  labs(x = "temas", y = "altituds (msnm)", colour = "zonas")+
+  #xlab("temas") + ylab("altituds (msnm)")+
+  theme_bw()+
+  theme(legend.title = element_text(size = 8),
+        legend.text = element_text(size = 6),
+        #legend.key.size = unit(6,"line"),
+        axis.text.y = element_text(angle = 90, size = 5),
+        axis.text.x = element_text(angle = 90, size = 5, hjust = 1, vjust = 0))+
+  guides(color = guide_legend(override.aes = list(size = 2)))
+# save to temp dir
+outFileName <- "_distr_typogravats_x_altura.png"
+outFile <- paste0(tmpDir,"/", outFileName)
+ggsave(outFile, 
+       g.bx.thm, 
+       width = 21, height = 18, units = "cm")
+# upload to Google Drive
+drive_upload(media = outFile, 
+             path = paste0(outDir.ggd, "/"),
+             name = outFileName,
+             overwrite = T)
+```
+
+### Altitudes por temas - seriacion
+
+
+```{r dist_alti_thm, warning=F, echo=FALSE, results='asis'}
+df <- thm_xt
+df <- df[!is.na(df$thm_xt), ]
+# zmean
+thm_xt_zmean <- df %>%
+  group_by(thm_xt) %>%
+  summarize(z_mean = mean(z, na.rm = TRUE))
+# count
+thm_xt_count <- df %>%
+  group_by(thm_xt) %>%
+  summarise(n = n())
+thm_xt_zmean <- merge(thm_xt_zmean, thm_xt_count, by = "thm_xt")
+thm_xt_zmean_order <- thm_xt_zmean[order(thm_xt_zmean$z_mean), "thm_xt"]
+df$thm_xt <- factor(df$thm_xt, levels = thm_xt_zmean_order)
+df <- merge(df, thm_xt_zmean, by="thm_xt", all.x = T)
+df_sp <- st_as_sf(df) # -> sf
+# max/min for ggplot
+z.min <- plyr::round_any(min(df$z, na.rm = T)-50, 50, f = ceiling)
+z.max <- plyr::round_any(max(df$z, na.rm = T), 50, f = ceiling)
+# size depend from nb thms (dim output, y labels)
+siz.rec <- length(unique(df$thm_xt))
+if(siz.rec < 33){by <- 100} else {by <- 50}
+#
+a.marg <- z.max + 25
+g.bx.thm.ser <- ggplot(data = df_sp, aes(y = z, x = thm_xt)) +
+  ggtitle("Altitudes por temas - seriación") +
+  geom_boxplot(fatten = 1.5, width = 0.7, lwd = 0.1, outlier.shape = NA) +
+  geom_jitter(position = position_jitter(width = .5),
+              size=.2, alpha = 0.5, aes(colour = df_sp$zona)) +
+  geom_point(y = df_sp$z_mean, x = df_sp$thm_xt,
+             shape= 3, color = "red", cex = .5) + # mean
+  geom_text(y = z.max, x = df_sp$thm_xt, label = df_sp$n, size = 1.5, hjust = 0.5) + # numbers
+  labs(x = "temas", y = "altituds (msnm)", colour = "zonas")+
+  expand_limits(y = c(z.min, a.marg)) +
+  scale_y_continuous(breaks = seq(z.min, z.max, by = by)) +
+  theme_bw()+
+  theme(legend.title = element_text(size = 8),
+        legend.text = element_text(size = 6),
+        #legend.key.size = unit(6,"line"),
+        axis.title = element_text(size = 7),
+        axis.text.y = element_text(size = 6),
+        axis.text.x = element_text(size = 6)) +
+  coord_flip() +
+  scale_colour_manual(values = mycolo) +
+  guides(color = guide_legend(override.aes = list(size = 2)))
+# save to temp dir
+outFileName <- "_distr_typogravats_x_altura_seriacion.png"
+outFile <- paste0(tmpDir,"/", outFileName)
+ggsave(outFile, 
+       g.bx.thm.ser, 
+       width = 21, height = 26, units = "cm")
+# upload to Google Drive
+drive_upload(media = outFile, 
+             path = paste0(outDir.ggd, "/"),
+             name = outFileName,
+             overwrite = T)
+```
+
+
+## Distribución espacial de los temas seleccionados
+
+```{r spati, warning=F, echo=FALSE, results='asis'}
+# selected themes
+lthms <- list(# ico
+  thm_cavalier = c("thm", "A.?h"),
+  thm_arbaletrier = c("thm", "A.?b"),
+  thm_cheval = c("thm", "Z.?h"),
+  thm_oiseau = c("thm", "Z.?b"),
+  thm_fleche = c("thm", "T.?f"),
+  thm_arbalete = c("thm", "T.?b"),
+  thm_cornemuse = c("thm", "T.?m"),
+  thm_pentacle = c("thm", "G.?p"),
+  thm_croix_chretienne = c("thm", "G.?k"),
+  thm_ecritures = c("thm", "^L"),
+  tec_naviforme = c("tec", ".?n.?"),
+  lat_droite = c("lat", "->"),
+  lat_gauche = c("lat", "<-")
+)
+# out dataframe
+df.thm <- data.frame(roche = character(),
+                     thm = character(),
+                     n = numeric(),
+                     X = numeric(),
+                     Y = numeric(),
+                     z = numeric(),
+                     zona = numeric())
+for (i in seq(1:length(lthms))){
+  # i <- 1
+  nom <- names(lthms[i])
+  print(paste0(i, ": ", nom))
+  patt <- as.character(lthms[i][[1]][2])
+  col <- lthms[i][[1]][1]
+  ico <- thm_xt[grep(patt, thm_xt[, col]),]
+  thm_ct_r <- ico %>% count(roche)
+  thm_ct_r$roche <- as.character(thm_ct_r$roche)
+  roques.coords <- cbind(roques, st_coordinates(roques))
+  sp_thm_ct_r <- merge(thm_ct_r, roques.coords, by.x = "roche", by.y= "roche", all.x = TRUE)
+  sp_thm_ct_r <- sp_thm_ct_r[!duplicated(sp_thm_ct_r$roche), ]
+  nrow(sp_thm_ct_r)
+  # remove z = NA
+  sp_thm_ct_r <- sp_thm_ct_r[!is.na(sp_thm_ct_r$z), ]
+  sp_thm_ct_r$thm <- gsub("thm_", "", names(lthms[i])) # remvoe "thm_" from label
+  sp_thm_ct_r <- sp_thm_ct_r[ , c("roche", "thm", "n", "X", "Y", "z", "zona")]
+  df.thm <- rbind(df.thm, sp_thm_ct_r)
+}
+gg_ico <- ggplot(df.thm, aes(X, Y, label = roche)) +
+  ggtitle("Distribución espacial de los temas seleccionados") +
+  facet_grid(thm ~ .) +
+  geom_point(data = df.thm, aes(X, Y), show.legend = FALSE, color="grey") +
+  geom_point(aes(size = n, color = zona), show.legend = FALSE) +
+  geom_text_repel(size = 1.5, segment.alpha = 0.3, segment.size = 0.1) +
+  coord_fixed()+
+  theme_bw()+
+  theme(plot.title = element_text(size = 8))+
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank())
+outFileName <- "_spat_typogravats.png"
+outFile <- paste0(tmpDir,"/", outFileName)
+# save to temp dir
+ggsave(outFile, 
+       gg_ico, 
+       width = 21, height = length(lthms)*3, units = "cm")
+# upload to Google Drive
+drive_upload(media = outFile, 
+             path = paste0(outDir.ggd, "/"),
+             name = outFileName,
+             overwrite = T)
+```
+
+
+## Tècniques de gravat
+
+```{r tek.count, warning=F, echo=FALSE}
+tec.nb.t <- sum(str_detect(thm_xt$tec, "t"), na.rm = TRUE)
+tec.nb.g <- sum(str_detect(thm_xt$tec, "g"), na.rm = TRUE)
+tec.nb.s <- sum(str_detect(thm_xt$tec, "s"), na.rm = TRUE)
+tec.nb.n <- sum(str_detect(thm_xt$tec, "n"), na.rm = TRUE)
+tec.nb.p <- sum(str_detect(thm_xt$tec, "p"), na.rm = TRUE)
+tec.nb.patinaclara <- sum(str_detect(thm_xt$tec, "%"), na.rm = TRUE)
+df.tec <- data.frame("incisio fina" = tec.nb.t,
+                     "incisio gruixuda" = tec.nb.g,
+                     "incisió raspada"  = tec.nb.s,
+                     "incisió 'V' profunda"  = tec.nb.n,
+                     "incisió repicat"  = tec.nb.p,
+                     check.names=FALSE)
+df.tec.t <- as.data.frame(t(df.tec))
+colnames(df.tec.t)[1] <- "n"
+df.tec.t$tecnica <- rownames(df.tec.t)
+gg_tek <- ggplot(df.tec.t, aes (x=tecnica, y = n, fill = tecnica)) + 
+  geom_bar(stat = "identity") +
+  geom_label_repel(aes(label = n, 
+                       y = n +.5)) +
+  coord_polar() + 
+  theme(legend.position="none",
+        panel.border = element_blank(),
+        panel.background = element_blank())
+outFileName <- "_tekgravats.png"
+outFile <- paste0(tmpDir,"/", outFileName)
+# save to temp dir
+ggsave(outFile, 
+       gg_tek, 
+       width = 14, height = 14, units = "cm")
+# upload to Google Drive
+drive_upload(media = outFile, 
+             path = paste0(outDir.ggd, "/"),
+             name = outFileName,
+             overwrite = T)
+```
+
+## Remove `tmpDir`
+
+```{r tek.count, warning=F, echo=FALSE}
+# dir.exists(tmpDir)
+unlink(tmpDir, recursive = TRUE, force = TRUE)
+rm(list=ls())
+```
