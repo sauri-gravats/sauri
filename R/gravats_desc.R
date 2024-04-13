@@ -1,6 +1,6 @@
-#' @name gravats_x
+#' @name gravats_desc
 #' 
-#' @description Statistics on engravings only.
+#' @description Descriptive statistics on engravings only.
 #'
 #' @param roques A dataframe of engraved rocks.
 #' @param gravats Path to the file of engraved rocks.
@@ -15,7 +15,7 @@
 #' 
 #' 
 #' @export
-gravats_x <- function(gravats = NA,
+gravats_desc <- function(gravats = NA,
                       gravats.fields = c("roche", "thm", "tec", "lat", "thm_xt"),
                       stats = c("tec"),
                       verbose = TRUE){

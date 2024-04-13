@@ -1,6 +1,6 @@
-#' @name roques_x
+#' @name roques_desc
 #' 
-#' @description Statistics on engraved rocks only.
+#' @description Dsecriptive statistics on engraved rocks only.
 #'
 #' @param roques A sf dataframe of engraved rocks.
 #' @param stats Which stats will be performed.
@@ -12,7 +12,7 @@
 #' 
 #' 
 #' @export
-roques_x <- function(roques = NA,
+roques_desc <- function(roques = NA,
                      stats = c("map_leaflet"),
                      verbose = TRUE){
   `%>%` <- dplyr::`%>%` # used to not load dplyr

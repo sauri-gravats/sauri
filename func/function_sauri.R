@@ -28,21 +28,6 @@ rdev.reproj <- function(a.geom){
 }
 
 
-roches <- st_read(dsn = "D:/Sites_10/Sauri/GIS/roches_pts", layer = "roches_all")
-# roches <- st_crs(roches, 2531)
-roches <- st_transform(roches, 4236) # rdev.reproj
-library(leaflet)
-leaflet(roques, height = "300px", width = "75%") %>%
-  addWMSTiles(
-    # "http://geoserveis.icgc.cat/icc_ortohistorica/wms/service?",
-    "http://www.ign.es/wms-inspire/pnoa-ma?",
-    layers = "OI.OrthoimageCoverage",
-    options = WMSTileOptions(format = "image/png", transparent = TRUE),
-    attribution = "") %>% 
-  # addTiles() %>%  # Add default OpenStreetMap map tiles
-  # all rocks
-  addCircleMarkers(popup="engraved<br>rock",radius = 1,opacity = 0.3)
-
 # http://geoserveis.icgc.cat/icc_ortohistorica/wms/service?
 
 # rdev.conn.pg <- function(){

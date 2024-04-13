@@ -1,6 +1,6 @@
 #' @name roques_x_gravats
 #' 
-#' @description Statistics on the engraving distributions by engraved rocks: numbers, altitudes, etc.
+#' @description Descriptive statistics on the engraving distributions by engraved rocks: numbers, altitudes, etc.
 #'
 #' @param roques A dataframe of engraved rocks.
 #' @param gravats Path to the file of engraved rocks.

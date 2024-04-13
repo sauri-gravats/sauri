@@ -41,12 +41,19 @@ lg <- roques_x_gravats(roques = roques,
 
 ############# Engraved rocks #####################################
 
-source("R/roques_x.R")
-lg <- roques_x(roques = roques)
+source("R/roques_desc.R")
+lg <- roques_desc(roques = roques)
 # lg$map_leaflet
 
 ############# Engravings #####################################
-# 
-source("R/gravats_x.R")
-lg <- gravats_x(gravats = gravats)
+# Descriptive
+source("R/gravats_desc.R")
+lg <- gravats_desc(gravats = gravats)
 # ggsave(paste0(outDir, "_spat_typogravats.png"), lg$grav_tec, width = 14, height = 14, units = "cm")
+
+# Multifact
+source("R/gravats_multi.R")
+lg <- gravats_multi(gravats = gravats)
+# ggsave(paste0(outDir, "_multi_ca_main_thm.png"), lg$mult_ca, width = 15, height = 15, units = "cm")
+
+
