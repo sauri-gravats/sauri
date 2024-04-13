@@ -23,7 +23,7 @@ options(warn=-1)
 
 library(googledrive)
 library(openxlsx)
-library(rgdal)
+# library(rgdal)
 library(raster)
 library(ggplot2)
 library(dplyr)
@@ -60,6 +60,8 @@ if(reload.gpkg){
 }
 # layer <- st_layers(roques.path) # not working
 roques <- st_read(roques.path, layer = "2019_2020-Roques_tot_zona_det")
+roques <- sf::st_read("C:/Rprojects/sauri/data/240413/Gravats_Sauri.gpkg")
+sf::st_layers("C:/Rprojects/sauri/data/240413/Gravats_Sauri.gpkg")
 ```
 
 # ANALYSES
@@ -67,10 +69,10 @@ roques <- st_read(roques.path, layer = "2019_2020-Roques_tot_zona_det")
 ## Número de grabados por roca
 
 ```{r , warning=F, echo=FALSE, results='asis'}
-thm_xt <- subset(gravats, select = c("roche", "thm", "tec", "lat", "thm_xt"))
+thm_xt <- subset(gravats, select = gravats.fields)
 # merge engravings and rocks
 thm_xt <- merge(thm_xt, roques, by = "roche", all.x = T)
-thm_xt <- subset(thm_xt, select = c("roche", "thm", "tec", "lat", "thm_xt", "geom", "z", "zona"))
+thm_xt <- subset(thm_xt, select = roques_x_gravats.fields)
 # thm_xt_z <- subset(thm_xt, select = c("roche", "thm_xt", "zona"))
 # export avec num zona
 # openxlsx::write.xlsx(thm_xt_z, "D:/Sites_10/Sauri/list_gravures_xt_z.xlsx",row.names = F,col.names=T,append = TRUE)
@@ -306,7 +308,8 @@ for (i in seq(1:length(lthms))){
   patt <- as.character(lthms[i][[1]][2])
   col <- lthms[i][[1]][1]
   ico <- thm_xt[grep(patt, thm_xt[, col]),]
-  thm_ct_r <- ico %>% count(roche)
+  thm_ct_r <- ico %>% 
+    count(roche)
   thm_ct_r$roche <- as.character(thm_ct_r$roche)
   roques.coords <- cbind(roques, st_coordinates(roques))
   sp_thm_ct_r <- merge(thm_ct_r, roques.coords, by.x = "roche", by.y= "roche", all.x = TRUE)
