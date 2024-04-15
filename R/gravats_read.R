@@ -11,7 +11,7 @@
 #' 
 #' 
 #' @export
-gravats_read <- function(gravats = "C:/Rprojects/sauri/data/240413/llista_gravats_19-20-23_DEFINITIVA_FINAL_FINAL.xls.xlsx",
+gravats_read <- function(gravats = "C:/Rprojects/sauri/doc/data/sources/240413/llista_gravats_19-20-23_DEFINITIVA_FINAL_FINAL.xls.xlsx",
                          verbose = TRUE){
   if(DescTools::SplitPath(gravats)$extension == "xlsx"){
     if(verbose){

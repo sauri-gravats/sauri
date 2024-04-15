@@ -27,6 +27,9 @@ roques_x_gravats <- function(roques = NA,
   if("altis_ngrav" %in% stats | "altis_tema" %in% stats){
     stats <- c(stats, "altis")
   }
+  # modify `roques` GeoPackage column names if needed
+  names(roques)[names(roques) == "cota"] <- "z"
+  names(roques)[names(roques) == "roca"] <- "roche"
   roques_x_gravats.fields <- c(gravats.fields, roques.fields)
   thm_xt <- subset(gravats, select = gravats.fields)
   thm_xt <- merge(thm_xt, roques, by = "roche", all.x = T)
@@ -60,7 +63,8 @@ roques_x_gravats <- function(roques = NA,
       ggplot2::geom_vline(xintercept = median.gr, linetype = "dashed", 
                           color = "lightgrey", size = .5) +
       ggplot2::annotate("text", x = median.gr, y = 40, label= median.label, angle = 90, size = 3, color = "darkgrey") +
-      ggplot2::xlab("nb gravats") + ylab("nb roques gravades") +
+      ggplot2::xlab("nb gravats") + 
+      ggplot2::ylab("nb roques gravades") +
       ggplot2::scale_x_continuous(breaks = c(1, 5, 10, 20, 30, 50, 75, 100))+
       ggplot2::xlim(0.9, 100)+
       ggplot2::theme_bw()
@@ -96,7 +100,8 @@ roques_x_gravats <- function(roques = NA,
       }
       g.hist.thm <- ggplot2::ggplot(thm_xt_sp) +
         ggplot2::ggtitle("Distribució d'altituds del gravat") +
-        ggplot2::xlab("altituds (msnm)") + ylab("total") +
+        ggplot2::xlab("altituds (msnm)") + 
+        ggplot2::ylab("total") +
         # annotate("rect",xmin=nprosp.alt[1],xmax=nprosp.alt[2],ymin=-Inf,ymax=Inf, alpha=0.1, fill="black")+
         # annotate("text", x = 1500, y = 100, label= "zone 4 \n no prospectada",angle=90,size=3) +
         ggplot2::geom_text(data = altis.zonas, 
@@ -106,7 +111,7 @@ roques_x_gravats <- function(roques = NA,
                             mapping = ggplot2::aes(xmin = alt.min, xmax = alt.max, ymin = 0, ymax = Inf),
                             fill = mycolo, alpha = 0.1) +
         ggplot2::geom_histogram(ggplot2::aes(x = z), colour = "black", fill = "white", binwidth = 10) +
-        ggplot2::theme(axis.text.y = element_text(angle = 90)) +
+        ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
         ggplot2::theme_bw()
       lg[['altis_ngrav']] <- g.hist.thm
     }
@@ -119,18 +124,18 @@ roques_x_gravats <- function(roques = NA,
           ggtitle("Altitudes por temas - orden alfabético") +
           ggplot2::geom_boxplot(fatten = 1.5, width = 0.7, lwd = 0.1, outlier.shape = NA) +
           #stat_summary(fun.data = min.mean.sd.max, geom = "boxplot",position=position_dodge(width=.5), size=.5)+
-          ggplot2::geom_jitter(position = position_jitter(width = .5), size = .2, aes(colour = zona)) +
+          ggplot2::geom_jitter(position = ggplot2::position_jitter(width = .5), size = .2, aes(colour = zona)) +
           # annotate("rect", ymin = nprosp.alt[1], ymax = nprosp.alt[2], xmin = -Inf, xmax = Inf, alpha = 0.1, fill = "black")+
           # annotate("text", y = 1500, x = 25, label= "zone 4 \n no prospectada",size=3,hjust=0) +
           ggplot2::labs(x = "temas", y = "altituds (msnm)", colour = "zonas")+
           #xlab("temas") + ylab("altituds (msnm)")+
           ggplot2::theme_bw()+
-          ggplot2::theme(legend.title = element_text(size = 8),
-                         legend.text = element_text(size = 6),
+          ggplot2::theme(legend.title = ggplot2::element_text(size = 8),
+                         legend.text = ggplot2::element_text(size = 6),
                          #legend.key.size = unit(6,"line"),
-                         axis.text.y = element_text(angle = 90, size = 5),
-                         axis.text.x = element_text(angle = 90, size = 5, hjust = 1, vjust = 0))+
-          ggplot2::guides(color = guide_legend(override.aes = list(size = 2)))
+                         axis.text.y = ggplot2::element_text(angle = 90, size = 5),
+                         axis.text.x = ggplot2::element_text(angle = 90, size = 5, hjust = 1, vjust = 0))+
+          ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 2)))
       }
       if(seriated){
         if(verbose){
@@ -145,7 +150,7 @@ roques_x_gravats <- function(roques = NA,
         # count
         thm_xt_count <- df %>%
           dplyr::group_by(thm_xt) %>%
-          dplyr::summarise(n = n())
+          dplyr::summarise(n = dplyr::n())
         thm_xt_zmean <- merge(thm_xt_zmean, thm_xt_count, by = "thm_xt")
         thm_xt_zmean_order <- thm_xt_zmean[order(thm_xt_zmean$z_mean), "thm_xt"]
         df$thm_xt <- factor(df$thm_xt, levels = thm_xt_zmean_order)
@@ -162,8 +167,8 @@ roques_x_gravats <- function(roques = NA,
         g.bx.thm <- ggplot2::ggplot(data = df_sp, ggplot2::aes(y = z, x = thm_xt)) +
           ggplot2::ggtitle("Altitudes por temas - seriación") +
           ggplot2::geom_boxplot(fatten = 1.5, width = 0.7, lwd = 0.1, outlier.shape = NA) +
-          ggplot2::geom_jitter(position = position_jitter(width = .5),
-                               size=.2, alpha = 0.5, aes(colour = zona)) +
+          ggplot2::geom_jitter(position = ggplot2::position_jitter(width = .5),
+                               size=.2, alpha = 0.5, ggplot2::aes(colour = zona)) +
           # size=.2, alpha = 0.5, aes(colour = df_sp$zona)) +
           ggplot2::geom_point(y = df_sp$z_mean, x = df_sp$thm_xt,
                               shape= 3, color = "red", cex = .5) + # mean
@@ -172,15 +177,15 @@ roques_x_gravats <- function(roques = NA,
           ggplot2::expand_limits(y = c(z.min, a.marg)) +
           ggplot2::scale_y_continuous(breaks = seq(z.min, z.max, by = by)) +
           ggplot2::theme_bw()+
-          ggplot2::theme(legend.title = element_text(size = 8),
-                         legend.text = element_text(size = 6),
+          ggplot2::theme(legend.title = ggplot2::element_text(size = 8),
+                         legend.text = ggplot2::element_text(size = 6),
                          #legend.key.size = unit(6,"line"),
-                         axis.title = element_text(size = 7),
-                         axis.text.y = element_text(size = 6),
-                         axis.text.x = element_text(size = 6)) +
+                         axis.title = ggplot2::element_text(size = 7),
+                         axis.text.y = ggplot2::element_text(size = 6),
+                         axis.text.x = ggplot2::element_text(size = 6)) +
           ggplot2::coord_flip() +
           ggplot2::scale_colour_manual(values = mycolo) +
-          ggplot2::guides(color = guide_legend(override.aes = list(size = 2)))
+          ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 2)))
       }
       lg[['altis_tema']] <- g.bx.thm
     }
@@ -207,7 +212,7 @@ roques_x_gravats <- function(roques = NA,
       thm_ct_r <- ico %>% 
         dplyr::count(roche)
       thm_ct_r$roche <- as.character(thm_ct_r$roche)
-      roques.coords <- cbind(roques, st_coordinates(roques))
+      roques.coords <- cbind(roques, sf::st_coordinates(roques))
       sp_thm_ct_r <- merge(thm_ct_r, roques.coords, by.x = "roche", by.y= "roche", all.x = TRUE)
       sp_thm_ct_r <- sp_thm_ct_r[!duplicated(sp_thm_ct_r$roche), ]
       nrow(sp_thm_ct_r)
@@ -217,18 +222,18 @@ roques_x_gravats <- function(roques = NA,
       sp_thm_ct_r <- sp_thm_ct_r[ , c("roche", "thm", "n", "X", "Y", "z", "zona")]
       df.thm <- rbind(df.thm, sp_thm_ct_r)
     }
-    gg_ico <- ggplot(df.thm, aes(X, Y, label = roche)) +
+    gg_ico <- ggplot2::ggplot(df.thm, ggplot2::aes(X, Y, label = roche)) +
       ggplot2::ggtitle("Distribución espacial de los temas seleccionados") +
       ggplot2::facet_grid(thm ~ .) +
-      ggplot2::geom_point(data = df.thm, aes(X, Y), show.legend = FALSE, color="grey") +
-      ggplot2::geom_point(aes(size = n, color = zona), show.legend = FALSE) +
+      ggplot2::geom_point(data = df.thm, ggplot2::aes(X, Y), show.legend = FALSE, color="grey") +
+      ggplot2::geom_point(ggplot2::aes(size = n, color = zona), show.legend = FALSE) +
       ggrepel::geom_text_repel(size = 1.5, segment.alpha = 0.3, segment.size = 0.1) +
       ggplot2::coord_fixed()+
       ggplot2::theme_bw()+
-      ggplot2::theme(plot.title = element_text(size = 8))+
-      ggplot2::theme(axis.title = element_blank(),
-                     axis.text = element_blank(),
-                     axis.ticks = element_blank())
+      ggplot2::theme(plot.title = ggplot2::element_text(size = 8))+
+      ggplot2::theme(axis.title = ggplot2::element_blank(),
+                     axis.text = ggplot2::element_blank(),
+                     axis.ticks = ggplot2::element_blank())
     lg[['spats_tema']] <- gg_ico
   }
   return(lg)

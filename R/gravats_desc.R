@@ -26,12 +26,12 @@ gravats_desc <- function(gravats = NA,
     if(verbose){
       print(paste0("Technic of engraving"))
     }
-    tec.nb.t <- sum(str_detect(thm_xt$tec, "t"), na.rm = TRUE)
-    tec.nb.g <- sum(str_detect(thm_xt$tec, "g"), na.rm = TRUE)
-    tec.nb.s <- sum(str_detect(thm_xt$tec, "s"), na.rm = TRUE)
-    tec.nb.n <- sum(str_detect(thm_xt$tec, "n"), na.rm = TRUE)
-    tec.nb.p <- sum(str_detect(thm_xt$tec, "p"), na.rm = TRUE)
-    tec.nb.patinaclara <- sum(str_detect(thm_xt$tec, "%"), na.rm = TRUE)
+    tec.nb.t <- sum(stringr::str_detect(thm_xt$tec, "t"), na.rm = TRUE)
+    tec.nb.g <- sum(stringr::str_detect(thm_xt$tec, "g"), na.rm = TRUE)
+    tec.nb.s <- sum(stringr::str_detect(thm_xt$tec, "s"), na.rm = TRUE)
+    tec.nb.n <- sum(stringr::str_detect(thm_xt$tec, "n"), na.rm = TRUE)
+    tec.nb.p <- sum(stringr::str_detect(thm_xt$tec, "p"), na.rm = TRUE)
+    tec.nb.patinaclara <- sum(stringr::str_detect(thm_xt$tec, "%"), na.rm = TRUE)
     df.tec <- data.frame("incisio fina" = tec.nb.t,
                          "incisio gruixuda" = tec.nb.g,
                          "incisió raspada"  = tec.nb.s,
@@ -47,8 +47,8 @@ gravats_desc <- function(gravats = NA,
                                              y = n +.5)) +
       ggplot2::coord_polar() + 
       ggplot2::theme(legend.position="none",
-                     panel.border = element_blank(),
-                     panel.background = element_blank())
+                     panel.border = ggplot2::element_blank(),
+                     panel.background = ggplot2::element_blank())
     lg[['grav_tec']] <- gg_tek
   }
   return(lg)

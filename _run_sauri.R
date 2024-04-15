@@ -1,20 +1,21 @@
 
-outDir = "C:/Rprojects/sauri/doc/img/"
+outDir = "C:/Rprojects/sauri/doc/"
 
 # read
 source("R/roques_read.R")
 source("R/gravats_read.R")
-roques <- roques_read(roques = "C:/Rprojects/sauri/doc/data/240413/Gravats_Sauri.gpkg")
-gravats <- gravats_read()
+roques <- roques_read(roques = "C:/Rprojects/sauri/doc/data/sources/240415/Thomas_Sauri.gpkg",
+                      gpkg.layer = "Roques")
+gravats <- gravats_read(gravats = "C:/Rprojects/sauri/doc/data/sources/240415/llista_gravats_19-20-23_DEFINITIVA_FINAL_FINAL.xlsx")
 
 ############# Engraved rocks x Engravings #####################################
 # Stats per roques: número de grabados por roca, altitudes, etc.
 source("R/roques_x_gravats.R")
 lg <- roques_x_gravats(roques = roques,
                        gravats = gravats)
-# ggsave(paste0(outDir, "_distr_nbgravats_x_nbroques.png"), lg$ngrav, width = 16, height = 8, units = "cm")
-# ggsave(paste0(outDir, "_distr_nbgravats_x_altura.png"), lg$altis_ngrav, width = 16, height = 10, units = "cm")
-# ggsave(paste0(outDir, "_distr_typogravats_x_altura.png"), lg$altis_tema, width = 21, height = 18, units = "cm")
+# ggplot2::ggsave(paste0(outDir, "_distr_nbgravats_x_nbroques.png"), lg$ngrav, width = 16, height = 8, units = "cm")
+# ggplot2::ggsave(paste0(outDir, "_distr_nbgravats_x_altura.png"), lg$altis_ngrav, width = 16, height = 10, units = "cm")
+# ggplot2::ggsave(paste0(outDir, "_distr_typogravats_x_altura.png"), lg$altis_tema, width = 21, height = 18, units = "cm")
 
 
 # Spatial
@@ -37,7 +38,7 @@ lthms <- list(# ico
 lg <- roques_x_gravats(roques = roques,
                        gravats = gravats,
                        lthms = lthms)
-# ggsave(paste0(outDir, "_spat_typogravats.png"), lg$spats_tema, width = 21, height = length(lthms)*3, units = "cm")
+# ggplot2::ggsave(paste0(outDir, "_spat_typogravats.png"), lg$spats_tema, width = 21, height = length(lthms)*3, units = "cm")
 
 ############# Engraved rocks #####################################
 

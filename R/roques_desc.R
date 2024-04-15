@@ -26,7 +26,7 @@ roques_desc <- function(roques = NA,
         # "http://geoserveis.icgc.cat/icc_ortohistorica/wms/service?",
         "http://www.ign.es/wms-inspire/pnoa-ma?",
         layers = "OI.OrthoimageCoverage",
-        options = WMSTileOptions(format = "image/png", transparent = TRUE),
+        options = leaflet::WMSTileOptions(format = "image/png", transparent = TRUE),
         attribution = "") %>% 
       # addTiles() %>%  # Add default OpenStreetMap map tiles
       # all rocks
