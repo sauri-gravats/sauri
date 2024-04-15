@@ -13,7 +13,7 @@
 #' 
 #' 
 #' @export
-roques_read <- function(roques = "C:/Rprojects/sauri/data/240413/Gravats_Sauri.gpkg",
+roques_read <- function(roques = "C:/Rprojects/sauri/doc/data/240413/Gravats_Sauri.gpkg",
                         gpkg.layer = "2019_2020— Roques_tot_zona_det",
                         to.wgs84 = TRUE,
                         verbose = TRUE){

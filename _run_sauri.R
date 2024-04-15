@@ -4,7 +4,7 @@ outDir = "C:/Rprojects/sauri/doc/img/"
 # read
 source("R/roques_read.R")
 source("R/gravats_read.R")
-roques <- roques_read()
+roques <- roques_read(roques = "C:/Rprojects/sauri/doc/data/240413/Gravats_Sauri.gpkg")
 gravats <- gravats_read()
 
 ############# Engraved rocks x Engravings #####################################
