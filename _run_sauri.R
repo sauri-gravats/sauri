@@ -402,7 +402,7 @@ lg$mult_ca_stat$eig
 source("R/dum_box.R")
 lbox <- list(list("dona", c(0, 1.5, 1.5, 5)), # zigzag and arboriforme
              list("cornamusa", c(1.5, 5, -1.5, .5)), # 
-             list("others", c(-1, 1, -1, .8)) # o
+             list("others", c(-1, .5, -1, 1)) # o
 )
 # Draw boxes
 gthms_5 <- dum_box(gplot = lg$mult_ca_plot,
@@ -421,7 +421,7 @@ for(i in 1:(length(lbox)-1)){
                       lbl.size = 3,
                       ind.lbl.shw = TRUE,
                       limit.coords = lbox[[i]][[2]])
-  ggplot2::ggsave(paste0(outDir, "gthms_4_ca_", lbox[[i]][[1]],".png"), lg$mult_ca_plot, 
+  ggplot2::ggsave(paste0(outDir, "gthms_5_ca_", lbox[[i]][[1]],".png"), lg$mult_ca_plot, 
                   width = 11, height = 11, units = "cm")
   # Spatial
   lg <- roques_x_gravats(roques = roques,
@@ -429,6 +429,6 @@ for(i in 1:(length(lbox)-1)){
                          limit_ind = as.character(lg$mult_ca_limit_ind$roques),
                          stats = "spats_limit_ind",
                          title.add = lbox[[i]][[1]])
-  ggplot2::ggsave(paste0(outDir, "gthms_4_spat_", lbox[[i]][[1]],".png"), lg$spats_limit_ind, 
+  ggplot2::ggsave(paste0(outDir, "gthms_5_spat_", lbox[[i]][[1]],".png"), lg$spats_limit_ind, 
                   width = 11, height = 11, units = "cm")
 }
