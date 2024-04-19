@@ -5,11 +5,13 @@
 #' @param roques A dataframe of engraved rocks.
 #' @param gravats Path to the file of engraved rocks.
 #' @param lthms List of selected themes. Only useful if "spats_tema" is in `stats`.
-#' @param stats Which stats will be performed.
+#' @param stats Which stats will be performed. `spats_limit_ind` will highlight a list of preselected engraved rocks (see `gravats_multi()` and the `limit.coords` parameter).
+#' @param limit_ind A character (a vector of characters) of engraved rocks to highlight (ex: `c("R126", R11", ...)`). Default: `NA`.
+#' @param title.add A complement to the title. Useful when `limit_ind` is TRUE to some of selected rocks (for example, rocks with 'arrows').
 #' @param seriated If TRUE, seriate the distribution
 #' @param verbose if TRUE (default) then display different messages.
 #'
-#' @return A lis of ggplots
+#' @return A list of ggplots
 #'
 #' @examples
 #' 
@@ -20,8 +22,10 @@ roques_x_gravats <- function(roques = NA,
                              roques.fields = c("geom", "z", "zona"),
                              gravats.fields = c("roche", "thm", "tec", "lat", "thm_xt"),
                              lthms = NA,
-                             stats = c("ngrav", "altis_ngrav", "altis_tema", "spats_tema"),
+                             stats = c("ngrav", "altis_ngrav", "altis_tema", "spats_tema", "spats_limit_ind"),
+                             limit_ind = NA,
                              seriated = TRUE,
+                             title.add = NA,
                              verbose = TRUE){
   `%>%` <- dplyr::`%>%` # used to not load dplyr
   if("altis_ngrav" %in% stats | "altis_tema" %in% stats){
@@ -52,16 +56,20 @@ roques_x_gravats <- function(roques = NA,
     mode.gr <- as.integer(names(sort(-table(nb.grav.roche$n)))[1])
     modo.label <- paste0("modo: ", mode.gr)
     g.dist.nbgrav <- ggplot2::ggplot(nb.grav.roche, ggplot2::aes(n)) +
-      ggplot2::ggtitle("Número de grabados por roca - media, mediana, moda") +
+      ggplot2::labs(title = "Número de grabados por roca - media, mediana, moda", 
+                    # subtitle = "Plot of random data points", 
+                    caption = paste0("nb rocas = ", nrow(nb.grav.roche), " | nb grabados = ", nrow(thm_xt))) +
+      # ggplot2::ggtitle("Número de grabados por roca - media, mediana, moda",
+      #                  caption = paste0("nrow = ", nrow(nb.grav.roche))) +
       ggplot2::geom_freqpoly(binwidth = 1)+
       ggplot2::geom_vline(xintercept = mode.gr, linetype = "dotted",
-                          color = "lightgrey", size=.5) +
+                          color = "lightgrey", linewidth =.5) +
       ggplot2::annotate("text", x = mode.gr, y = 40, label = modo.label, angle = 90, size = 3, color = "darkgrey") +
       ggplot2::geom_vline(xintercept = mean.gr, 
-                          color = "lightgrey", size = .5) +
+                          color = "lightgrey", linewidth = .5) +
       ggplot2::annotate("text", x = mean.gr, y = 40, label = mean.label, angle = 90, size = 3, color = "darkgrey") +
       ggplot2::geom_vline(xintercept = median.gr, linetype = "dashed", 
-                          color = "lightgrey", size = .5) +
+                          color = "lightgrey", linewidth = .5) +
       ggplot2::annotate("text", x = median.gr, y = 40, label= median.label, angle = 90, size = 3, color = "darkgrey") +
       ggplot2::xlab("nb gravats") + 
       ggplot2::ylab("nb roques gravades") +
@@ -203,24 +211,35 @@ roques_x_gravats <- function(roques = NA,
                          z = numeric(),
                          zona = numeric())
     for (i in seq(1:length(lthms))){
-      # i <- 1
+      # i <- 2
       nom <- names(lthms[i])
-      print(paste0(i, ": ", nom))
       patt <- as.character(lthms[i][[1]][2])
+      if(verbose){
+        print(paste0(i, ": ", nom, " | pattern = ", patt))
+      }
+      # find the right column
       col <- lthms[i][[1]][1]
       ico <- thm_xt[grep(patt, thm_xt[, col]),]
-      thm_ct_r <- ico %>% 
-        dplyr::count(roche)
-      thm_ct_r$roche <- as.character(thm_ct_r$roche)
-      roques.coords <- cbind(roques, sf::st_coordinates(roques))
-      sp_thm_ct_r <- merge(thm_ct_r, roques.coords, by.x = "roche", by.y= "roche", all.x = TRUE)
-      sp_thm_ct_r <- sp_thm_ct_r[!duplicated(sp_thm_ct_r$roche), ]
-      nrow(sp_thm_ct_r)
-      # remove z = NA
-      sp_thm_ct_r <- sp_thm_ct_r[!is.na(sp_thm_ct_r$z), ]
-      sp_thm_ct_r$thm <- gsub("thm_", "", names(lthms[i])) # remvoe "thm_" from label
-      sp_thm_ct_r <- sp_thm_ct_r[ , c("roche", "thm", "n", "X", "Y", "z", "zona")]
-      df.thm <- rbind(df.thm, sp_thm_ct_r)
+      # ico <- thm_xt[grep("personatge.*ballesta", thm_xt[, col]),]
+      # head(ico)
+      if(nrow(ico) > 0){
+        thm_ct_r <- ico %>% 
+          dplyr::count(roche)
+        thm_ct_r$roche <- as.character(thm_ct_r$roche)
+        roques.coords <- cbind(roques, sf::st_coordinates(roques))
+        sp_thm_ct_r <- merge(thm_ct_r, roques.coords, by.x = "roche", by.y= "roche", all.x = TRUE)
+        sp_thm_ct_r <- sp_thm_ct_r[!duplicated(sp_thm_ct_r$roche), ]
+        nrow(sp_thm_ct_r)
+        # remove z = NA
+        sp_thm_ct_r <- sp_thm_ct_r[!is.na(sp_thm_ct_r$z), ]
+        sp_thm_ct_r$thm <- gsub("thm_", "", names(lthms[i])) # remvoe "thm_" from label
+        sp_thm_ct_r <- sp_thm_ct_r[ , c("roche", "thm", "n", "X", "Y", "z", "zona")]
+        df.thm <- rbind(df.thm, sp_thm_ct_r)
+      } else {
+        if(verbose){
+          print(paste0("        /!\ None"))
+        }
+      }
     }
     gg_ico <- ggplot2::ggplot(df.thm, ggplot2::aes(X, Y, label = roche)) +
       ggplot2::ggtitle("Distribución espacial de los temas seleccionados") +
@@ -236,5 +255,75 @@ roques_x_gravats <- function(roques = NA,
                      axis.ticks = ggplot2::element_blank())
     lg[['spats_tema']] <- gg_ico
   }
+  if("spats_limit_ind" %in% stats & is.character(limit_ind)){
+    if(verbose){
+      print(paste0("Spatial distribution of selected engraved rocks"))
+    }
+    # tit
+    if(!is.na(title.add)){
+      if(verbose){
+        print(paste0("Add new text to the plot title"))
+      }
+      tit <- paste("Distribución espacial de los roques gravades seleccionadas: ", toupper(title.add))
+    } else {
+      tit <- paste("Distribución espacial de los roques gravades seleccionadas")
+    }
+    # select and convert to dataframe and rename columns
+    # limit_ind
+    roques.limit_ind <- roques[roques$roche %in% limit_ind, ]
+    roques.limit_indXY <- sf::st_coordinates(roques.limit_ind)
+    roques.limit_ind <- sf::st_set_geometry(roques.limit_ind, NULL)
+    roques.limit_ind.df <- cbind(roques.limit_ind, roques.limit_indXY)
+    # print(colnames(roques.limit_ind.df))
+    #
+    roques.others <- roques[!(roques$roche %in% limit_ind), ]
+    roques.othersXY <- sf::st_coordinates(roques.others)
+    roques.others <- sf::st_set_geometry(roques.others, NULL)
+    roques.others.df <- cbind(roques.others, roques.othersXY)
+    # print(colnames(roques.others.df))
+    ## /!\ cannot change correctly the column names /!\ ##
+    # print(class(roques.limit_ind))
+    # roques.limit_ind.df <- roques.limit_ind %>%
+    #   sf::st_set_geometry(NULL) %>% 
+    #   cbind(sf::st_coordinates(roques.limit_ind)) %>%
+    #   dplyr::rename(Longitude = X, Latitude = Y)
+    colnames(roques.limit_ind.df)[which(colnames(roques.limit_ind.df) == "X")] <- "Longitude"
+    colnames(roques.limit_ind.df)[which(colnames(roques.limit_ind.df) == "Y")] <- "Latitude"
+    # colnames(roques.limit_ind.df)[which(colnames(roques.limit_ind.df) == "1")] <- "Longitude"
+    # colnames(roques.limit_ind.df)[which(colnames(roques.limit_ind.df) == "2")] <- "Latitude"
+    # # others
+    # 
+    # roques.others.df <- roques.others %>%
+    #   sf::st_set_geometry(NULL) %>%
+    #   cbind(sf::st_coordinates(roques.others)) %>%
+    #   dplyr::rename(Longitude = X, Latitude = Y)
+    colnames(roques.others.df)[which(colnames(roques.others.df) == "X")] <- "Longitude"
+    colnames(roques.others.df)[which(colnames(roques.others.df) == "Y")] <- "Latitude"
+    # colnames(roques.others.df)[which(colnames(roques.others.df) == "1")] <- "Longitude"
+    # colnames(roques.others.df)[which(colnames(roques.others.df) == "2")] <- "Latitude"
+    # plot
+    gg_limit_ind <- ggplot2::ggplot() +
+      ggplot2::ggtitle(tit) +
+      ggplot2::geom_point(data = roques.others.df, # x = roques.others$X, y = roques.others$Y,
+                          ggplot2::aes(x = Longitude, y = Latitude),
+                          show.legend = FALSE, color="grey") +
+      ggplot2::geom_point(data = roques.limit_ind.df, # x = roques.limit_ind$X, y = roques.limit_ind$Y,
+                          ggplot2::aes(x = Longitude, y = Latitude),
+                          show.legend = FALSE, color="black") +
+      ggrepel::geom_text_repel(data = roques.limit_ind.df,
+                               ggplot2::aes(label = roche, x = Longitude, y = Latitude), max.overlaps = Inf) +
+      ggplot2::theme_bw() +
+      ggplot2::theme(plot.title = ggplot2::element_text(size = 8)) +
+      ggplot2::theme(axis.title = ggplot2::element_blank(),
+                     axis.text = ggplot2::element_blank(),
+                     axis.ticks = ggplot2::element_blank())
+    # fileOut <- paste0('spats_limit_ind_', title.add)
+    if(verbose){
+      print(paste0("Save the plot '", "spats_limit_ind", "'"))
+    }
+    lg[["spats_limit_ind"]] <- gg_limit_ind
+  }
   return(lg)
 }
+
+# ,stat = "sf_coordinates", min.segment.length = 0

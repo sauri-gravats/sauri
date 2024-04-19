@@ -1,9 +1,10 @@
 #' @name gravats_multi
 #' 
-#' @description Multifactorial statistics on engravings only.
+#' @description Multifactorial statistics on engravings only, either for themes (column 'thm_xt'), technics (column 'tec'), lateralisation (column 'lat'). The `limit.coords` parameter, when not `NA`, returns a 'zoom' on a particular area of the plot with the list of individuals within this box.
 #'
 #' @param gravats Path to the file of engraved rocks.
 #' @param stats Which stats will be performed.
+#' @param limit.coords Deafult `NA`. If a vector is provided, will limit the ggplot to these coordinates, xmin, xmax, ymin and ymax.
 #' @param verbose if TRUE (default) then display different messages.
 #'
 #' @return A list of ggplots
@@ -15,19 +16,21 @@
 gravats_multi <- function(gravats = NA,
                           gravats.fields = c("roche", "thm", "tec", "lat", "thm_xt"),
                           stats = c("mult_ca"),
-                          patts = c("estrella", "arboriforme", "pentacle", "zig−zag",
-                                    "dona", "home", "personatge",
-                                    "ballesta", "llança", "espasa", "arc",
-                                    # "fletxa",
-                                    "casc/barret/corona",
-                                    "cornamusa",
-                                    "ocell", "cavall|equid"),
+                          lthms = NA,
+                          # patts = c("estrella", "arboriforme", "pentacle", "zigzag",
+                          #           "dona", "home", "personatge",
+                          #           "ballesta", "llança", "espasa", "arc",
+                          #           # "fletxa",
+                          #           "casc/barret/corona",
+                          #           "cornamusa",
+                          #           "ocell", "cavall|equid"),
                           pts.size = 1.5,
                           lbl.size = 2,
-                          ind.color = "blue",
+                          ind.color = "lightgrey",
                           var.color = "black",
                           ind.lbl.shw = FALSE,
                           var.lbl.shw = TRUE,
+                          limit.coords = NA,
                           verbose = TRUE){
   `%>%` <- dplyr::`%>%` # used to not load dplyr
   thm_xt <- subset(gravats, select = gravats.fields)
@@ -39,16 +42,31 @@ gravats_multi <- function(gravats = NA,
     if(verbose){
       print(paste0("CA on engravings main themes"))
     }
-    df.patts <- thm_xt[0,]
-    for (patt in patts){
-      # patt <- "estrella"
+    # copy the structure
+    df.patts <- thm_xt[0, ]
+    # for (patt in lthms){
+    #   # patt <- "estrella"
+    for (i in seq(1:length(lthms))){
+      # i <- 1
+      nom <- names(lthms[i])
+      patt <- as.character(lthms[i][[1]][2])
       if(verbose){
-        print(paste0(" .. read: ", patt))
+        print(paste0(i, ": ", nom, " | pattern = ", patt))
       }
-      thm_xt.thm <- thm_xt[grep(patt, thm_xt[,"thm_xt"]),]
-      if(nrow(thm_xt.thm) > 0 ){
-        thm_xt.thm$thm_xt <- patt
-        df.patts <- rbind(df.patts, thm_xt.thm)
+      # find the right column
+      col <- lthms[i][[1]][1]
+      ico <- thm_xt[grep(patt, thm_xt[, col]),]
+      
+      # ico$thm_xt <- nom
+      
+      # 
+      # if(verbose){
+      #   print(paste0(" .. read: ", patt))
+      # }
+      # thm_xt.thm <- thm_xt[grep(patt, thm_xt[,"thm_xt"]),]
+      if(nrow(ico) > 0 ){
+        ico$thm_xt <-  gsub("thm_", "", nom)
+        df.patts <- rbind(df.patts, ico)
       } else {
         if(verbose){
           print(paste0(" .. .... /!\ no data for: ", patt))
@@ -85,6 +103,12 @@ gravats_multi <- function(gravats = NA,
     dataset.ps <- merge(dataset.p, dfsymb, by = "Row.names", all.x = T)
     dataset.ps$shape <- as.factor(dataset.ps$shape)
     names(dataset.ps)[names(dataset.ps) == 'Row.names'] <- "roques"
+    
+    # reorder to have the var over the ind
+    dataset.ps$color <- factor(dataset.ps$color, levels = c(ind.color, var.color))
+    dataset.ps <- dataset.ps[order(dataset.ps$color), ]
+    
+    
     # ff <- merge(dataset.ps, df_per_site, by = num_column, all.x = T)
     # matches <- colnames(dataset.ps) # reorder
     # ff <- ff[ ,match(matches, colnames(ff))]
@@ -102,6 +126,9 @@ gravats_multi <- function(gravats = NA,
       #                                 label = "my label"),
       #                    hjust = 0,
       #                    vjust = 1) +
+      ggplot2::labs(# title = "Número de grabados por roca - media, mediana, moda", 
+        # subtitle = "Plot of random data points", 
+        caption = paste0("nb rocas = ", nrow(coords_ind_ca), " | nb themas = ", nrow(coords_var_ca))) +
       ggplot2::geom_point(ggplot2::aes(CA1, CA2,
                                        colour = color,
                                        fill = color,
@@ -109,35 +136,16 @@ gravats_multi <- function(gravats = NA,
                                        pch = shape),
                           size = pts.size) +
       ggplot2::geom_hline(yintercept = 0, linetype = "dashed",
-                          size = 0.2, alpha = 0.3) +
+                          linewidth = 0.2, alpha = 0.3) +
       ggplot2::geom_vline(xintercept = 0, linetype = "dashed",
-                          size = 0.2, alpha = 0.3)
-    if(ind.lbl.shw){
-      dataset.ps.ind <- dataset.ps[!(dataset.ps$roques %in% var.thms), ]
-      gg.ca <- gg.ca +  
-        ggrepel::geom_text_repel(data = dataset.ps.ind,
-                                 ggplot2::aes(CA1, CA2, label = roques),
-                                 cex = lbl.size,
-                                 segment.size = 0.1,
-                                 segment.alpha = 0.5,
-                                 max.overlaps = Inf)
-    }
-    if(var.lbl.shw){
-      dataset.ps.var <- dataset.ps[dataset.ps$roques %in% var.thms, ]
-      gg.ca <- gg.ca +  
-        ggrepel::geom_text_repel(data = dataset.ps.var,
-                                 ggplot2::aes(CA1, CA2, label = roques),
-                                 cex = lbl.size,
-                                 segment.size = 0.1,
-                                 segment.alpha = 0.5,
-                                 max.overlaps = Inf)
-    }
-    gg.ca <- gg.ca + ggplot2::geom_text(data = df.ca.perc,
-                                        mapping = ggplot2::aes(x = 0, y = -Inf,
-                                                               label = paste0(perCA1,"%")),
-                                        vjust = -1,
-                                        size = 2,
-                                        alpha = 0.5) +
+                          linewidth = 0.2, alpha = 0.3) +
+      # gg.ca <- gg.ca + 
+      ggplot2::geom_text(data = df.ca.perc,
+                         mapping = ggplot2::aes(x = 0, y = -Inf,
+                                                label = paste0(perCA1,"%")),
+                         vjust = -1,
+                         size = 2,
+                         alpha = 0.5) +
       ggplot2::geom_text(data = df.ca.perc,
                          mapping = ggplot2::aes(x = -Inf, y = 0,
                                                 label = paste0(perCA2, "%")),
@@ -148,13 +156,13 @@ gravats_multi <- function(gravats = NA,
       ggplot2::theme(axis.text = ggplot2::element_text(size = 5),
                      axis.title.x = ggplot2::element_text(size = 8),
                      axis.title.y = ggplot2::element_text(size = 8)) +
-      ggplot2::theme(axis.ticks = ggplot2::element_line(size = 0.2)) +
+      ggplot2::theme(axis.ticks = ggplot2::element_line(linewidth = 0.2)) +
       ggplot2::theme(legend.position = "none") +
       ggplot2::theme(strip.text.x = ggplot2::element_text(size = 8),
                      strip.text.y = ggplot2::element_blank()) +
       ggplot2::theme(panel.border = ggplot2::element_rect(colour = 'black',
                                                           fill = NA,
-                                                          size = 0.2)) +
+                                                          linewidth = 0.2)) +
       ggplot2::theme(panel.background = ggplot2::element_rect(fill = 'transparent')) +
       ggplot2::theme(panel.spacing.y = ggplot2::unit(0, "lines")) +
       # ggplot2::scale_x_continuous(limits = CA1_interval, expand = c(0, 0)) +
@@ -162,7 +170,74 @@ gravats_multi <- function(gravats = NA,
       ggplot2::scale_colour_identity() +
       # ggplot2::scale_shape_identity() +
       ggplot2::scale_fill_identity()
-    lg[['mult_ca']] <- gg.ca
+    if(is.numeric(limit.coords)){
+      if(verbose){
+        print(paste0("Limit the plot to selected coordinates (box)"))
+      }
+      limit.indvar <- dataset.ps %>%
+        dplyr::filter(
+          CA1 >= limit.coords[1] & CA1 <= limit.coords[2],
+          CA2 >= limit.coords[3] & CA2 <= limit.coords[4],
+        )
+      if(ind.lbl.shw){
+        limit.indvar.ind <- limit.indvar[!(limit.indvar$roques %in% var.thms), ]
+        gg.ca <- gg.ca +  
+          ggrepel::geom_text_repel(data = limit.indvar.ind,
+                                   ggplot2::aes(CA1, CA2, label = roques),
+                                   cex = lbl.size,
+                                   segment.size = 0.1,
+                                   segment.alpha = 0.5,
+                                   max.overlaps = Inf)
+      }
+      if(var.lbl.shw){
+        limit.indvar.var <- limit.indvar[limit.indvar$roques %in% var.thms, ]
+        gg.ca <- gg.ca +  
+          ggrepel::geom_text_repel(data = limit.indvar.var,
+                                   ggplot2::aes(CA1, CA2, label = roques),
+                                   cex = lbl.size,
+                                   segment.size = 0.1,
+                                   segment.alpha = 0.5,
+                                   max.overlaps = Inf)
+      }
+      gg.ca <- gg.ca +
+        ggplot2::coord_cartesian(xlim = c(limit.coords[1], limit.coords[2]), 
+                                 ylim = c(limit.coords[3], limit.coords[4])) 
+      if(verbose){
+        print(paste0("Creates the list of individuals within the coordinates (box)"))
+      }
+      # the individuals within the box
+      limit.ind <- dataset.ps %>%
+        dplyr::filter(
+          CA1 >= limit.coords[1] & CA1 <= limit.coords[2],
+          CA2 >= limit.coords[3] & CA2 <= limit.coords[4],
+          color == ind.color
+        )
+      lg[['mult_ca_limit_ind']] <- limit.ind[, c("roques", "CA1", "CA2")]
+    } else {
+      # plot all labels
+      if(ind.lbl.shw){
+        dataset.ps.ind <- dataset.ps[!(dataset.ps$roques %in% var.thms), ]
+        gg.ca <- gg.ca +  
+          ggrepel::geom_text_repel(data = dataset.ps.ind,
+                                   ggplot2::aes(CA1, CA2, label = roques),
+                                   cex = lbl.size,
+                                   segment.size = 0.1,
+                                   segment.alpha = 0.5,
+                                   max.overlaps = Inf)
+      }
+      if(var.lbl.shw){
+        dataset.ps.var <- dataset.ps[dataset.ps$roques %in% var.thms, ]
+        gg.ca <- gg.ca +  
+          ggrepel::geom_text_repel(data = dataset.ps.var,
+                                   ggplot2::aes(CA1, CA2, label = roques),
+                                   cex = lbl.size,
+                                   segment.size = 0.1,
+                                   segment.alpha = 0.5,
+                                   max.overlaps = Inf)
+      }
+    }
+    lg[['mult_ca_plot']] <- gg.ca
+    lg[['mult_ca_stat']] <- ca
   }
   return(lg)
 }
