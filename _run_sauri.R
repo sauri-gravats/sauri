@@ -55,7 +55,8 @@ lg <- roques_x_gravats(roques = roques,
 source("R/roques_desc.R")
 lg <- roques_desc(roques = roques)
 # lg$map_leaflet
-
+htmlwidgets::saveWidget(lg$map_leaflet, "C:/Rprojects/sauri/doc/map_leaflet.html")
+lg$list_ordered
 ############# Engravings #####################################
 ## Descriptive
 source("R/gravats_desc.R")
@@ -64,7 +65,6 @@ lg <- gravats_desc(gravats = gravats)
 
 ########## 1 ###############
 ## Multifact
-source("R/gravats_multi.R")
 lthms <- list(# ico
   # anthropomorph
   thm_home = c("thm_xt", "personatge.*home"),
@@ -96,11 +96,13 @@ lthms <- list(# ico
   # lat_dreta = c("lat", "->"),
   # lat_esquerra = c("lat", "<-")
 )
+source("R/gravats_multi.R")
 lg <- gravats_multi(gravats = gravats,
                     lthms = lthms,
                     pts.size = 2,
                     lbl.size = 3)
-ggplot2::ggsave(paste0(outDir, "gthms_1_ca.png"), lg$mult_ca_plot, width = 15, height = 15, units = "cm")
+# ggplot2::ggsave(paste0(outDir, "gthms_1_ca.png"), lg$mult_ca_plot, width = 15, height = 15, units = "cm")
+
 ## Not Run
 # lg$mult_ca_stat$eig # Eigen values
 # paste0(rownames(lg$mult_ca_stat$col$coord), collapse = ", ") # studied themes

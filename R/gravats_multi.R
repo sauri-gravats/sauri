@@ -15,7 +15,8 @@
 #' @export
 gravats_multi <- function(gravats = NA,
                           gravats.fields = c("roche", "thm", "tec", "lat", "thm_xt"),
-                          stats = c("mult_ca"),
+                          gravats.main.thm = c("personatge", "zoomorf", "literal", "tècnic", "geomètric", "irreconeixible"),
+                          stats = c("mult_ca", "sd"),
                           lthms = NA,
                           # patts = c("estrella", "arboriforme", "pentacle", "zigzag",
                           #           "dona", "home", "personatge",
@@ -24,6 +25,7 @@ gravats_multi <- function(gravats = NA,
                           #           "casc/barret/corona",
                           #           "cornamusa",
                           #           "ocell", "cavall|equid"),
+                          sd.thres = 2,
                           pts.size = 1.5,
                           lbl.size = 2,
                           ind.color = "lightgrey",
@@ -38,6 +40,43 @@ gravats_multi <- function(gravats = NA,
   # library("factoextra")
   # main themes
   lg <- list()
+  if("sd" %in% stats){
+    if(verbose){
+      print(paste0("SD (standard deviation)"))
+    }
+    thm_xt$thm_xt <- stringr::str_trim(thm_xt$thm_xt)
+    result <- thm_xt %>%
+      tidyr::separate_rows(thm_xt, sep = "\\+") %>%
+      dplyr::mutate(thm_xt = trimws(tolower(thm_xt))) %>%
+      dplyr::filter(thm_xt != "") %>%
+      dplyr::count(roche, thm_xt) %>%
+      tidyr::pivot_wider(names_from = thm_xt, values_from = n, values_fill = list(n = 0)) %>%
+      dplyr::select(roche, sort(names(.[-1]))) %>%
+      dplyr::select(-all_of(gravats.main.thm)) %>%
+      tibble::column_to_rownames('roche')
+    #%>%
+      # tibble::select(-column1, -column2) %>%
+    # rownames(result) <- result[['roche']] # warning
+    # result[['roche']] <- NULL
+    lg[['table']] <- result
+    ## Error ## TODO: to fix
+    # sd
+    # Calculate means and standard deviations for each variable
+    means <- colMeans(lg[['table']])
+    sds <- apply(lg[['table']], 2, sd)
+    # Calculate the number of standard deviations each individual's score is from the mean
+    df_sds <- sweep(lg[['table']], 2, means, "-") / sds
+    # You might want to identify values that are more than a certain number of standard deviations away
+    # For example, you could use a threshold of 2 standard deviations for significance
+    df_significant <- df_sds > sd.thres
+    
+    # Now, you have a logical dataframe indicating which values are significantly higher
+    # If you want a dataframe with the actual standard deviations where significant:
+    df_result <- df_sds * df_significant
+    View(df_result)
+    # If you want to replace non-significant values with 0 or NA:
+    # df_result[df_result <= threshold] <- 0  # or
+  }
   if("mult_ca" %in% stats){
     if(verbose){
       print(paste0("CA on engravings main themes"))
