@@ -40,7 +40,7 @@ roques_desc <- function(roques = NA,
     if(verbose){
       print(paste0("Leaflet map"))
     }
-    gleaflet <- leaflet::leaflet(roques, height = "300px", width = "75%") %>%
+    gleaflet <- leaflet::leaflet(roques) %>%
       leaflet::addWMSTiles(
         # "http://geoserveis.icgc.cat/icc_ortohistorica/wms/service?",
         "http://www.ign.es/wms-inspire/pnoa-ma?",
