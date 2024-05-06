@@ -12,7 +12,9 @@ gravats <- gravats_read(gravats = "C:/Rprojects/sauri/doc/data/sources/240415/ll
 # Stats per roques: número de grabados por roca, altitudes, etc.
 source("R/roques_x_gravats.R")
 lg <- roques_x_gravats(roques = roques,
-                       gravats = gravats)
+                       gravats = gravats,
+                       stats = "altis_tema_att")
+# ggplot2::ggsave(paste0(outDir, "_distr_typogravats_x_altura_thm.png"), lg$altis_tema_att, width = 21, height = 14, units = "cm")
 # ggplot2::ggsave(paste0(outDir, "_distr_nbgravats_x_nbroques.png"), lg$ngrav, width = 16, height = 8, units = "cm")
 # ggplot2::ggsave(paste0(outDir, "_distr_nbgravats_x_altura.png"), lg$altis_ngrav, width = 16, height = 10, units = "cm")
 # ggplot2::ggsave(paste0(outDir, "_distr_typogravats_x_altura.png"), lg$altis_tema, width = 21, height = 18, units = "cm")
@@ -55,12 +57,14 @@ lg <- roques_x_gravats(roques = roques,
 source("R/roques_desc.R")
 lg <- roques_desc(roques = roques)
 # lg$map_leaflet
-htmlwidgets::saveWidget(lg$map_leaflet, "C:/Rprojects/sauri/doc/map_leaflet.html")
+htmlwidgets::saveWidget(lg$map_leaflet, "C:/Rprojects/sauri/doc/map_leaflet.html", title = "Sauri - roques")
 lg$list_ordered
 ############# Engravings #####################################
 ## Descriptive
 source("R/gravats_desc.R")
-lg <- gravats_desc(gravats = gravats)
+lg <- gravats_desc(gravats = gravats, stats = 'thm')
+
+lg <- gravats_desc(gravats = gravats, stats = 'tec')
 # ggplot2::ggsave(paste0(outDir, "_spat_typogravats.png"), lg$grav_tec, width = 14, height = 14, units = "cm")
 
 ########## 1 ###############

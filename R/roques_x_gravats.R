@@ -5,7 +5,8 @@
 #' @param roques A dataframe of engraved rocks.
 #' @param gravats Path to the file of engraved rocks.
 #' @param lthms List of selected themes. Only useful if "spats_tema" is in `stats`.
-#' @param stats Which stats will be performed. `spats_limit_ind` will highlight a list of preselected engraved rocks (see `gravats_multi()` and the `limit.coords` parameter).
+#' @param stats Which stats will be performed. `altis_tema_full` will create a plot for the full engravings themes (ex: `personatge + casc/barret/corona + home + llança + espasa`) while `altis_tema_att` while split these full themes in how many attributes (ex: `personatge`,  `casc/barret/corona`, `home`, `llança`, `espasa`) to considerate theme separately.
+#' @param lg If a list is provided, will output results in this list, if not, will create a list from scratch.
 #' @param limit_ind A character (a vector of characters) of engraved rocks to highlight (ex: `c("R126", R11", ...)`). Default: `NA`.
 #' @param title.add A complement to the title. Useful when `limit_ind` is TRUE to some of selected rocks (for example, rocks with 'arrows').
 #' @param seriated If TRUE, seriate the distribution
@@ -21,24 +22,43 @@ roques_x_gravats <- function(roques = NA,
                              gravats = NA,
                              roques.fields = c("geom", "z", "zona"),
                              gravats.fields = c("roche", "thm", "tec", "lat", "thm_xt"),
+                             gravats.main.thm = c("personatge", "zoomorf", "literal", "tècnic", "geomètric", "irreconeixible"),
                              lthms = NA,
-                             stats = c("ngrav", "altis_ngrav", "altis_tema", "spats_tema", "spats_limit_ind"),
+                             stats = c("ngrav", "altis_ngrav", "altis_tema_full", "altis_tema_att", "spats_tema", "spats_limit_ind"),
+                             lg = NA,
                              limit_ind = NA,
                              seriated = TRUE,
                              title.add = NA,
                              verbose = TRUE){
   `%>%` <- dplyr::`%>%` # used to not load dplyr
-  if("altis_ngrav" %in% stats | "altis_tema" %in% stats){
-    stats <- c(stats, "altis")
+  if(!is.list(lg)){
+    if(verbose){
+      print(paste0("Overwrites/Creates the outut `lg` list"))
+    }
+    lg <- list()
+  }
+  if("altis_ngrav" %in% stats | "altis_tema_full" %in% stats){
+    stats <- c(stats, "altis_full")
+  }
+  if("altis_tema_att" %in% stats){
+    stats <- c(stats, "altis_att")
   }
   # modify `roques` GeoPackage column names if needed
   names(roques)[names(roques) == "cota"] <- "z"
   names(roques)[names(roques) == "roca"] <- "roche"
   roques_x_gravats.fields <- c(gravats.fields, roques.fields)
+  # 'full'
   thm_xt <- subset(gravats, select = gravats.fields)
   thm_xt <- merge(thm_xt, roques, by = "roche", all.x = T)
   thm_xt <- subset(thm_xt, select = roques_x_gravats.fields)
-  lg <- list()
+  # 'att'
+  source("R/gravats_desc.R")
+  lg_thm <- gravats_desc(gravats = gravats, stats = c("thm"))
+  thm_xt_att <- lg_thm[['grav_thm']]
+  roques_x_gravats.fields <- c(colnames(thm_xt_att), roques.fields)
+  thm_xt_att$roche <- rownames(thm_xt_att)
+  thm_xt_att <- merge(thm_xt_att, roques, by = "roche", all.x = T)
+  thm_xt_att <- subset(thm_xt_att, select = roques_x_gravats.fields)
   if("ngrav" %in% stats){
     if(verbose){
       print(paste0("Distribution nb of engravings by engraved rocks"))
@@ -78,25 +98,51 @@ roques_x_gravats <- function(roques = NA,
       ggplot2::theme_bw()
     lg[['ngrav']] <- g.dist.nbgrav
   }
-  if("altis" %in% stats){
+  if("altis_full" %in% stats | "altis_att" %in% stats){
+    if(verbose){
+      print(paste0("Distribution of engravings by altitudes"))
+    }
     ## altitudes histograms
-    # zones
-    altis.zonas <- thm_xt %>% 
-      dplyr::group_by(zona) %>% 
-      dplyr::mutate(alt.min = min(z),
-                    alt.max  = max(z),
-                    alt.moy = mean(z))
-    altis.zonas <- subset(altis.zonas, select = c("zona", "alt.min", "alt.max", "alt.moy"))
-    altis.zonas <- altis.zonas[!duplicated(altis.zonas), ]
-    # remove zones without altitudes
-    altis.zonas <- altis.zonas[!is.na(altis.zonas$zona), ]
-    # rocks
-    thm_xt_sp <- sf::st_as_sf(thm_xt) # -> sf
-    # remove rocks without altitudes
-    thm_xt_sp <- thm_xt_sp[!is.na(thm_xt_sp$z), ]
-    mycolo <- c("red", "blue", "pink", "yellow", "green")
-    # regroupements
-    thm_xt_sp <- thm_xt_sp[order(thm_xt_sp$thm_xt),] 
+    if("altis_full" %in% stats){
+      # zones
+      altis.zonas <- thm_xt %>% 
+        dplyr::group_by(zona) %>% 
+        dplyr::mutate(alt.min = min(z),
+                      alt.max  = max(z),
+                      alt.moy = mean(z))
+      altis.zonas <- subset(altis.zonas, select = c("zona", "alt.min", "alt.max", "alt.moy"))
+      altis.zonas <- altis.zonas[!duplicated(altis.zonas), ]
+      # remove zones without altitudes
+      altis.zonas <- altis.zonas[!is.na(altis.zonas$zona), ]
+      # rocks
+      thm_xt_sp <- sf::st_as_sf(thm_xt) # -> sf
+      # remove rocks without altitudes
+      thm_xt_sp <- thm_xt_sp[!is.na(thm_xt_sp$z), ]
+      mycolo <- c("red", "blue", "pink", "yellow", "green")
+      # regroupements
+      thm_xt_sp <- thm_xt_sp[order(thm_xt_sp$thm_xt),] 
+    }
+    
+    if("altis_att" %in% stats){
+      # zones
+      altis.zonas.att <- thm_xt_att %>% 
+        dplyr::group_by(zona) %>% 
+        dplyr::mutate(alt.min = min(z),
+                      alt.max  = max(z),
+                      alt.moy = mean(z))
+      altis.zonas.att <- subset(altis.zonas.att, select = c("zona", "alt.min", "alt.max", "alt.moy"))
+      altis.zonas.att <- altis.zonas.att[!duplicated(altis.zonas.att), ]
+      # remove zones without altitudes
+      altis.zonas.att <- altis.zonas.att[!is.na(altis.zonas.att$zona), ]
+      # rocks
+      thm_xt_sp_att <- sf::st_as_sf(thm_xt_att) # -> sf
+      # remove rocks without altitudes
+      thm_xt_sp_att <- thm_xt_sp_att[!is.na(thm_xt_sp_att$z), ]
+      mycolo <- c("red", "blue", "pink", "yellow", "green")
+      # regroupements
+      # thm_xt_sp_att <- thm_xt_sp_att[order(thm_xt_sp_att$thm_xt_att),] 
+    }
+    
     # min.mean.sd.max <- function(x) {
     #   r <- c(min(x), mean(x) - sd(x), mean(x), mean(x) + sd(x), max(x))
     #   names(r) <- c("ymin", "lower", "middle", "upper", "ymax")
@@ -104,7 +150,7 @@ roques_x_gravats <- function(roques = NA,
     # }
     if("altis_ngrav" %in% stats){
       if(verbose){
-        print(paste0("Distribution nb of engravings by altitudes"))
+        print(paste0("Distribution of total number of engravings by altitudes"))
       }
       g.hist.thm <- ggplot2::ggplot(thm_xt_sp) +
         ggplot2::ggtitle("Distribució d'altituds del gravat") +
@@ -123,10 +169,10 @@ roques_x_gravats <- function(roques = NA,
         ggplot2::theme_bw()
       lg[['altis_ngrav']] <- g.hist.thm
     }
-    if("altis_tema" %in% stats){
+    if("altis_tema_full" %in% stats){
       if(!seriated){
         if(verbose){
-          print(paste0("Distribution engraved themes by altitudes - alphabetical order"))
+          print(paste0("Distribution of 'full' engraved themes by altitudes - alphabetical order"))
         }
         g.bx.thm <- ggplot2::ggplot(ggplot2::aes(y = z, x = thm_xt), data = thm_xt_sp) +
           ggtitle("Altitudes por temas - orden alfabético") +
@@ -147,7 +193,7 @@ roques_x_gravats <- function(roques = NA,
       }
       if(seriated){
         if(verbose){
-          print(paste0("Distribution engraved themes by altitudes - seriation"))
+          print(paste0("Distribution of 'full' engraved themes by altitudes - seriation"))
         }
         df <- thm_xt
         df <- df[!is.na(df$thm_xt), ]
@@ -195,7 +241,98 @@ roques_x_gravats <- function(roques = NA,
           ggplot2::scale_colour_manual(values = mycolo) +
           ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 2)))
       }
-      lg[['altis_tema']] <- g.bx.thm
+      lg[['altis_tema_full']] <- g.bx.thm
+    }
+    if("altis_tema_att" %in% stats){
+      if(verbose){
+        print(paste0("Convert main themes columns to UPPERCASE"))
+      }
+      names(thm_xt_sp_att)[names(thm_xt_sp_att) %in% gravats.main.thm] <- toupper(gravats.main.thm)
+      if(verbose){
+        print(paste0("Convert df to a long format"))
+      }
+      # Convert to long format
+      long_format <- thm_xt_sp_att %>%
+        tidyr::pivot_longer(cols = -roques.fields,   # Change 'everything()' if you need to exclude some columns
+                            names_to = "thm_xt_att",    # Column containing the original column names
+                            values_to = "count")       # Column containing the counts
+      # Repeat rows according to the counts using `uncount`
+      expanded_format <- long_format %>%
+        tidyr::uncount(count)   # Will repeat each row according to the 'count' column
+      # sapply(thm_xt_sp_att, class)
+      if(!seriated){
+        if(verbose){
+          print(paste0("Distribution of 'attribute' engraved themes by altitudes - alphabetical order"))
+        }
+        # plot
+        g.bx.thm <- ggplot2::ggplot(ggplot2::aes(y = z, x = thm_xt_att), data = expanded_format) +
+          ggplot2::ggtitle("Altitudes por temas - orden alfabético") +
+          ggplot2::geom_boxplot(fatten = 1.5, width = 0.7, lwd = 0.1, outlier.shape = NA) +
+          #stat_summary(fun.data = min.mean.sd.max, geom = "boxplot",position=position_dodge(width=.5), size=.5)+
+          ggplot2::geom_jitter(position = ggplot2::position_jitter(width = .5), size = .2, ggplot2::aes(colour = zona)) +
+          # annotate("rect", ymin = nprosp.alt[1], ymax = nprosp.alt[2], xmin = -Inf, xmax = Inf, alpha = 0.1, fill = "black")+
+          # annotate("text", y = 1500, x = 25, label= "zone 4 \n no prospectada",size=3,hjust=0) +
+          ggplot2::labs(x = "temas", y = "altituds (msnm)", colour = "zonas")+
+          #xlab("temas") + ylab("altituds (msnm)")+
+          ggplot2::theme_bw()+
+          ggplot2::theme(legend.title = ggplot2::element_text(size = 8),
+                         legend.text = ggplot2::element_text(size = 6),
+                         #legend.key.size = unit(6,"line"),
+                         axis.text.y = ggplot2::element_text(angle = 90, size = 5),
+                         axis.text.x = ggplot2::element_text(angle = 90, size = 5, hjust = 1, vjust = 0))+
+          ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 2)))
+      }
+      if(seriated){
+        if(verbose){
+          print(paste0("Distribution of 'attribute' engraved themes by altitudes - seriation"))
+        }
+        df <- expanded_format
+        # df <- df[!is.na(df$thm_xt), ]
+        # zmean
+        thm_xt_zmean <- df %>%
+          dplyr::group_by(thm_xt_att) %>%
+          dplyr::summarize(z_mean = mean(z, na.rm = TRUE))
+        # count
+        thm_xt_count <- df %>%
+          dplyr::group_by(thm_xt_att) %>%
+          dplyr::summarise(n = dplyr::n())
+        thm_xt_zmean <- merge(thm_xt_zmean, thm_xt_count, by = "thm_xt_att")
+        thm_xt_zmean_order <- thm_xt_zmean[order(thm_xt_zmean$z_mean), "thm_xt_att"]
+        df$thm_xt_att <- factor(df$thm_xt_att, levels = thm_xt_zmean_order)
+        df <- merge(df, thm_xt_zmean, by="thm_xt_att", all.x = T)
+        df_sp <- sf::st_as_sf(df) # -> sf
+        # max/min for ggplot
+        z.min <- plyr::round_any(min(df$z, na.rm = T)-50, 50, f = ceiling)
+        z.max <- plyr::round_any(max(df$z, na.rm = T), 50, f = ceiling)
+        # size depend from nb thms (dim output, y labels)
+        siz.rec <- length(unique(df$thm_xt_att))
+        if(siz.rec < 33){by <- 100} else {by <- 50}
+        #
+        a.marg <- z.max + 25
+        g.bx.thm.att <- ggplot2::ggplot(data = df_sp, ggplot2::aes(y = z, x = thm_xt_att)) +
+          ggplot2::ggtitle("Altitudes por temas - seriación") +
+          ggplot2::geom_boxplot(fatten = 1.5, width = 0.7, lwd = 0.1, outlier.shape = NA) +
+          ggplot2::geom_jitter(position = ggplot2::position_jitter(width = .5),
+                               size=.2, alpha = 0.5, ggplot2::aes(colour = zona)) +
+          # size=.2, alpha = 0.5, aes(colour = df_sp$zona)) +
+          ggplot2::geom_point(y = df_sp$z_mean, x = df_sp$thm_xt_att,
+                              shape= 3, color = "red", cex = .5) + # mean
+          ggplot2::geom_text(y = z.max, x = df_sp$thm_xt_att, label = df_sp$n, size = 1.5, hjust = 0.5) + # numbers
+          ggplot2::labs(x = "temas", y = "altituds (msnm)", colour = "zonas")+
+          ggplot2::expand_limits(y = c(z.min, a.marg)) +
+          ggplot2::scale_y_continuous(breaks = seq(z.min, z.max, by = by)) +
+          ggplot2::theme_bw() +
+          ggplot2::theme(legend.title = ggplot2::element_text(size = 8),
+                         legend.text = ggplot2::element_text(size = 6),
+                         #legend.key.size = unit(6,"line"),
+                         axis.title = ggplot2::element_text(size = 7),
+                         axis.text.y = ggplot2::element_text(size = 6),
+                         axis.text.x = ggplot2::element_text(size = 6)) +
+          ggplot2::coord_flip() +
+          ggplot2::scale_colour_manual(values = mycolo) +
+          ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 2)))
+      }
+      lg[['altis_tema_att']] <- g.bx.thm.att
     }
   }
   if("spats_tema" %in% stats & is.list(lthms)){

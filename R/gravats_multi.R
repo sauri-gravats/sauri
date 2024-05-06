@@ -5,6 +5,7 @@
 #' @param gravats Path to the file of engraved rocks.
 #' @param stats Which stats will be performed.
 #' @param limit.coords Deafult `NA`. If a vector is provided, will limit the ggplot to these coordinates, xmin, xmax, ymin and ymax.
+#' @param lg If a list is provided, will output results in this list, if not, will create a list from scratch.
 #' @param verbose if TRUE (default) then display different messages.
 #'
 #' @return A list of ggplots
@@ -17,6 +18,7 @@ gravats_multi <- function(gravats = NA,
                           gravats.fields = c("roche", "thm", "tec", "lat", "thm_xt"),
                           gravats.main.thm = c("personatge", "zoomorf", "literal", "tècnic", "geomètric", "irreconeixible"),
                           stats = c("mult_ca", "sd"),
+                          lg = NA,
                           lthms = NA,
                           # patts = c("estrella", "arboriforme", "pentacle", "zigzag",
                           #           "dona", "home", "personatge",
@@ -39,26 +41,34 @@ gravats_multi <- function(gravats = NA,
   # library(FactoMineR)
   # library("factoextra")
   # main themes
-  lg <- list()
+  if(is.na(lg)){
+    if(verbose){
+      print(paste0("Overwrites/Creates the outut `lg` list"))
+    }
+    lg <- list()
+  }
   if("sd" %in% stats){
+    # TODO: put this 'sd' part into roques_x_gravats
     if(verbose){
       print(paste0("SD (standard deviation)"))
     }
-    thm_xt$thm_xt <- stringr::str_trim(thm_xt$thm_xt)
-    result <- thm_xt %>%
-      tidyr::separate_rows(thm_xt, sep = "\\+") %>%
-      dplyr::mutate(thm_xt = trimws(tolower(thm_xt))) %>%
-      dplyr::filter(thm_xt != "") %>%
-      dplyr::count(roche, thm_xt) %>%
-      tidyr::pivot_wider(names_from = thm_xt, values_from = n, values_fill = list(n = 0)) %>%
-      dplyr::select(roche, sort(names(.[-1]))) %>%
-      dplyr::select(-all_of(gravats.main.thm)) %>%
-      tibble::column_to_rownames('roche')
-    #%>%
-      # tibble::select(-column1, -column2) %>%
-    # rownames(result) <- result[['roche']] # warning
-    # result[['roche']] <- NULL
-    lg[['table']] <- result
+    source("R/gravats_desc.R")
+    lg_thm <- gravats_desc(gravats = gravats, stats = c("thm"))
+    # TODO: deal with the main themes
+    lg_thm[['grav_thm']] <- lg_thm[['grav_thm']][ , -gravats.main.thm]
+      
+    # thm_xt$thm_xt <- stringr::str_trim(thm_xt$thm_xt)
+    # result <- thm_xt %>%
+    #   tidyr::separate_rows(thm_xt, sep = "\\+") %>%
+    #   dplyr::mutate(thm_xt = trimws(tolower(thm_xt))) %>%
+    #   dplyr::filter(thm_xt != "") %>%
+    #   dplyr::count(roche, thm_xt) %>%
+    #   tidyr::pivot_wider(names_from = thm_xt, values_from = n, values_fill = list(n = 0)) %>%
+    #   dplyr::select(roche, sort(names(.[-1]))) %>%
+    #   dplyr::select(-all_of(gravats.main.thm)) %>%
+    #   tibble::column_to_rownames('roche')
+    # lg[['table']] <- result
+    lg[['table']] <- lg_thm[['grav_thm']]
     ## Error ## TODO: to fix
     # sd
     # Calculate means and standard deviations for each variable
