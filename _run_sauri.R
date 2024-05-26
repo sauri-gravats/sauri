@@ -67,7 +67,7 @@ lg <- gravats_desc(gravats = gravats, stats = 'thm')
 lg <- gravats_desc(gravats = gravats, stats = 'tec')
 # ggplot2::ggsave(paste0(outDir, "_spat_typogravats.png"), lg$grav_tec, width = 14, height = 14, units = "cm")
 
-########## 1 ###############
+########## level 1 ###############
 ## Multifact
 lthms <- list(# ico
   # anthropomorph
@@ -162,7 +162,7 @@ for(i in 1:(length(lbox)-1)){
                   width = 11, height = 11, units = "cm")
 }
 
-########## 2 ###############
+########## level 2 ###############
 # without fletxa and escrituras
 
 source("R/gravats_multi.R")
@@ -245,7 +245,7 @@ for(i in 1:(length(lbox)-1)){
 }
 
 
-########## 3 ###############
+########## level 3 ###############
 # without fletxa and escrituras and zigzag; and arboriforme and estrealla and creu cristiana and pentacle
 
 source("R/gravats_multi.R")
@@ -322,7 +322,7 @@ for(i in 1:(length(lbox)-1)){
 }
 
 
-########## 4 ###############
+########## level 4 ###############
 # without fletxa and escrituras and zigzag; and arboriforme and estrealla and creu cristiana and pentacle; ocell, ballesta, ballester
 
 source("R/gravats_multi.R")
@@ -382,7 +382,7 @@ for(i in 1:(length(lbox)-1)){
                   width = 11, height = 11, units = "cm")
 }
 
-########## 5 ###############
+########## level 5 ###############
 # without fletxa and escrituras and zigzag; and arboriforme and estrealla and creu cristiana and pentacle; ocell, ballesta, ballester; arc, cavall
 
 source("R/gravats_multi.R")
