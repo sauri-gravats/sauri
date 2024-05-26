@@ -55,7 +55,13 @@ gravats_multi <- function(gravats = NA,
     source("R/gravats_desc.R")
     lg_thm <- gravats_desc(gravats = gravats, stats = c("thm"))
     # TODO: deal with the main themes
-    lg_thm[['grav_thm']] <- lg_thm[['grav_thm']][ , -gravats.main.thm]
+    if(verbose){
+      print(paste0("Remove the main themes (columns)"))
+    }
+    # df.grav <- lg_thm[['grav_thm']]
+    lg_thm[['grav_thm']] <- lg_thm[['grav_thm']][, !(colnames(lg_thm[['grav_thm']]) %in% gravats.main.thm)]
+    # lg_thm[['grav_thm']] <- df.grav
+    # lg_thm[['grav_thm']] <- lg_thm[['grav_thm']][ , -gravats.main.thm]
       
     # thm_xt$thm_xt <- stringr::str_trim(thm_xt$thm_xt)
     # result <- thm_xt %>%
@@ -74,18 +80,9 @@ gravats_multi <- function(gravats = NA,
     # Calculate means and standard deviations for each variable
     means <- colMeans(lg[['table']])
     sds <- apply(lg[['table']], 2, sd)
-    # Calculate the number of standard deviations each individual's score is from the mean
     df_sds <- sweep(lg[['table']], 2, means, "-") / sds
-    # You might want to identify values that are more than a certain number of standard deviations away
-    # For example, you could use a threshold of 2 standard deviations for significance
-    df_significant <- df_sds > sd.thres
-    
-    # Now, you have a logical dataframe indicating which values are significantly higher
-    # If you want a dataframe with the actual standard deviations where significant:
-    df_result <- df_sds * df_significant
-    View(df_result)
-    # If you want to replace non-significant values with 0 or NA:
-    # df_result[df_result <= threshold] <- 0  # or
+    df_sds <- round(df_sds, 2)
+    lg[['sd']] <- df_sds
   }
   if("mult_ca" %in% stats){
     if(verbose){

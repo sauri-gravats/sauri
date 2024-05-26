@@ -59,6 +59,8 @@ lg <- roques_desc(roques = roques)
 # lg$map_leaflet
 htmlwidgets::saveWidget(lg$map_leaflet, "C:/Rprojects/sauri/doc/map_leaflet.html", title = "Sauri - roques")
 lg$list_ordered
+
+
 ############# Engravings #####################################
 ## Descriptive
 source("R/gravats_desc.R")
@@ -100,6 +102,12 @@ lthms <- list(# ico
   # lat_dreta = c("lat", "->"),
   # lat_esquerra = c("lat", "<-")
 )
+
+# source("R/gravats_multi.R")
+# lg <- gravats_multi(gravats = gravats,
+#                     stats = "sd",
+#                     lthms = lthms)
+
 source("R/gravats_multi.R")
 lg <- gravats_multi(gravats = gravats,
                     lthms = lthms,
